@@ -11,8 +11,8 @@
         <form class="form" id="tweet-create-form" method="POST" action="/create-tweet">
             {% csrf_token %}
             <input type="hidden" value="/" name="next" />
-            <textarea class="form-control" name="content" placeholder="Your tweet..."></textarea>
-            <button type="submit" class="btn btn-primary my-1">Tweet</button>
+            <textarea required="required" class="form-control" name="content" placeholder="Your tweet..."></textarea>
+            <button type="submit" class="btn btn-primary">Tweet</button>
         </form>
     </div>
 </div>
@@ -20,15 +20,35 @@
 <div class="row" id="tweets">Loading...</div>
 
 <script>
-    function handleTweetCreateFormSubmit(event) {
-        event.preventDefault()
-        console.log(event)
+    function handleTweetCreateFormDidSumbit(event) {
+        event.preventDefault();
+        const myForm = event.target;
+        const myFormData = new FormData(myForm);
+        const url = myForm.getAttribute('action');
+        const method = myForm.getAttribute('method');
+        const xhr = new XMLHttpRequest();
+        const responseType = 'json';
+        xhr.responseType = responseType;
+        xhr.open(method, url);
+        // for django 2.2 AJAX
+        xhr.setRequestHeader('HTTP_X_REQUESTED_WITH', 'XMLHttpRequest');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.onload = function () {
+            if (xhr.status === 201) {
+                const newTweetJson = xhr.response;
+                // to convert JSON into string or something
+                const newTweetElement = formatTweetElement(newTweetJson);
+                const ogHtml = tweetsContainerElement.innerHTML;
+                tweetsContainerElement.innerHTML = newTweetElement + ogHtml;
+                myForm.reset();
+            }
+        };
+        xhr.send(myFormData);
     }
+    const tweetCreateFormEl = document.getElementById('tweet-create-form');
+    tweetCreateFormEl.addEventListener('submit', handleTweetCreateFormDidSumbit);
 
-    const tweetCreateFormEl = document.getElementById('tweet-create-form')
-    tweetCreateFormEl.addEventListener('submit', handleTweetCreateFormSubmit)
-
-    const tweetsEL = document.getElementById('tweets'); // get an html element
+    const tweetsContainerElement = document.getElementById('tweets'); // get an html element
     // tweetsElement.innerHTML = 'Loading...' // set new html in that element
     // var el1 = "<h1>Hi there 1</h1>"
     // var el2 = "<h1>Hi there 2</h1>"
@@ -57,7 +77,7 @@
         xhr.send();
     }
 
-    loadTweets(tweetsEL)
+    loadTweets(tweetsContainerElement);
 
     function handleDidLike(tweet_id, currentCount) {
         console.log(tweet_id, currentCount);
