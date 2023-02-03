@@ -6,7 +6,7 @@ from django.conf import settings
 from django.utils.http import is_safe_url
 
 from .models import Tweet
-from .serializers import TweetSerializer, TweetActionSerializer
+from .serializers import TweetCreateSerializer, TweetSerializer, TweetActionSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated
@@ -27,7 +27,7 @@ def home_view(request, *args, **kwargs):
 # @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def tweet_create_view(request, *args, **kwargs):
-    serializer = TweetSerializer(data=request.POST or None)
+    serializer = TweetCreateSerializer(data=request.POST or None)
     # automatically issues error is it's there
     if serializer.is_valid(raise_exception=True):
         serializer.save(user=request.user)
@@ -40,7 +40,6 @@ def tweet_create_view(request, *args, **kwargs):
 @api_view(['GET'])  # only GET method is allowed
 def tweet_list_view(request, *args, **kwargs):
     qs = Tweet.objects.all()
-    # qs = Tweet.objects.values('id', 'content')
     serializer = TweetSerializer(qs, many=True)
 
     return Response(serializer.data, status=201)
@@ -87,6 +86,7 @@ def tweet_action_view(request, *args, **kwargs):
         data = serializer.validated_data
         tweet_id = data.get('id')
         action = data.get('action')
+        content = data.get('content')
 
     qs = Tweet.objects.filter(id=tweet_id)
     if not qs.exists():
@@ -101,10 +101,17 @@ def tweet_action_view(request, *args, **kwargs):
     elif action == 'unlike':
         obj.likes.remove(request.user)
     elif action == 'retweet':
-        pass
+        parent_obj = obj
+        new_tweet = Tweet.objects.create(
+                            user=request.user,
+                            parent=parent_obj,
+                            content=content
+                            )
+
+        serializer = TweetSerializer(new_tweet)
+        return Response(serializer.data, status=200)
 
     return Response({'message': 'tweet succesfully deleted!'}, status=401)
-
 
 
 
