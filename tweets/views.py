@@ -42,7 +42,7 @@ def tweet_list_view(request, *args, **kwargs):
     qs = Tweet.objects.all()
     serializer = TweetSerializer(qs, many=True)
 
-    return Response(serializer.data, status=201)
+    return Response(serializer.data, status=200)
 
 
 
@@ -54,7 +54,7 @@ def tweet_detail_view(request, tweet_id, *args, **kwargs):
     obj = qs.first()
     serializer = TweetSerializer(obj)
 
-    return Response(serializer.data, status=201)
+    return Response(serializer.data, status=200)
 
 
 
@@ -69,7 +69,7 @@ def tweet_delete_view(request, tweet_id, *args, **kwargs):
         return Response({'message': 'you cannot delete this tweet'}, status=401)
     obj = qs.first()
     obj.delete()
-    return Response({'message': 'tweet succesfully deleted!'}, status=401)
+    return Response({'message': 'tweet succesfully deleted!'}, status=200)
 
 
 
@@ -100,6 +100,9 @@ def tweet_action_view(request, *args, **kwargs):
 
     elif action == 'unlike':
         obj.likes.remove(request.user)
+        serializer = TweetSerializer(obj)
+        return Response(serializer.data, status=200)
+
     elif action == 'retweet':
         parent_obj = obj
         new_tweet = Tweet.objects.create(
@@ -109,9 +112,9 @@ def tweet_action_view(request, *args, **kwargs):
                             )
 
         serializer = TweetSerializer(new_tweet)
-        return Response(serializer.data, status=200)
+        return Response(serializer.data, status=201)
 
-    return Response({'message': 'tweet succesfully deleted!'}, status=401)
+    return Response({}, status=200)
 
 
 
